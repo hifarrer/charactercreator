@@ -12,6 +12,8 @@ import {
   Loader2,
   ImageIcon,
   X,
+  RefreshCw,
+  Film,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,8 +29,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CameraAngleModal } from "@/components/camera-angle-modal";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/api-client";
+import { apiRequest, getAuthToken } from "@/lib/api-client";
+import {
+  CHARACTER_BACKGROUNDS,
+  CHARACTER_BACKGROUND_LABELS,
+  CHARACTER_SHOT_TYPES,
+  CHARACTER_SHOT_TYPE_LABELS,
+  type CharacterBackground,
+  type CharacterShotType,
+} from "@/lib/character-framing";
 import {
   cn,
   ASPECT_RATIOS,
@@ -68,11 +85,67 @@ function AspectRatioSelect({
   );
 }
 
+function CharacterBackgroundSelect({
+  value,
+  onChange,
+}: {
+  value: CharacterBackground;
+  onChange: (v: CharacterBackground) => void;
+}) {
+  return (
+    <Select
+      value={value}
+      onValueChange={(v) => onChange(v as CharacterBackground)}
+    >
+      <SelectTrigger className="h-10 min-w-[160px] max-w-xs border-zinc-600 bg-zinc-900 text-zinc-100 hover:bg-zinc-800/80">
+        <SelectValue placeholder="Background" />
+      </SelectTrigger>
+      <SelectContent position="popper" sideOffset={6} className="border-zinc-600 bg-zinc-900">
+        {CHARACTER_BACKGROUNDS.map((b) => (
+          <SelectItem key={b} value={b} className="text-zinc-100 focus:bg-zinc-800 focus:text-white">
+            {CHARACTER_BACKGROUND_LABELS[b]}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function CharacterShotTypeSelect({
+  value,
+  onChange,
+}: {
+  value: CharacterShotType;
+  onChange: (v: CharacterShotType) => void;
+}) {
+  return (
+    <Select
+      value={value}
+      onValueChange={(v) => onChange(v as CharacterShotType)}
+    >
+      <SelectTrigger className="h-10 min-w-[180px] max-w-xs border-zinc-600 bg-zinc-900 text-zinc-100 hover:bg-zinc-800/80">
+        <SelectValue placeholder="Shot type" />
+      </SelectTrigger>
+      <SelectContent position="popper" sideOffset={6} className="border-zinc-600 bg-zinc-900">
+        {CHARACTER_SHOT_TYPES.map((s) => (
+          <SelectItem key={s} value={s} className="text-zinc-100 focus:bg-zinc-800 focus:text-white">
+            {CHARACTER_SHOT_TYPE_LABELS[s]}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
 export function StandaloneCharacterCreator() {
   const [activeTab, setActiveTab] = useState("generate");
   const [prompt, setPrompt] = useState("");
   const [selectedStyle, setSelectedStyle] = useState<CharacterStyle | null>(null);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("1:1");
+  const [characterBackground, setCharacterBackground] =
+    useState<CharacterBackground>("black");
+  const [characterShotType, setCharacterShotType] =
+    useState<CharacterShotType>("front");
   const [generatedImages, setGeneratedImages] = useState<string[]>([]);
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
@@ -85,9 +158,52 @@ export function StandaloneCharacterCreator() {
   const [multiPoseByUrl, setMultiPoseByUrl] = useState<Record<string, string[]>>(
     {}
   );
+  const [multiPoseSequenceByUrl, setMultiPoseSequenceByUrl] = useState<
+    Record<string, string>
+  >({});
+  const [multiPoseVideosByUrl, setMultiPoseVideosByUrl] = useState<
+    Record<string, string[]>
+  >({});
   const [multiPosePendingUrl, setMultiPosePendingUrl] = useState<string | null>(
     null
   );
+  const [multiPoseVideosPendingUrl, setMultiPoseVideosPendingUrl] = useState<
+    string | null
+  >(null);
+  const [multiExpressionByUrl, setMultiExpressionByUrl] = useState<
+    Record<string, string[]>
+  >({});
+  const [multiExpressionSequenceByUrl, setMultiExpressionSequenceByUrl] =
+    useState<Record<string, string>>({});
+  const [multiExpressionVideosByUrl, setMultiExpressionVideosByUrl] = useState<
+    Record<string, string[]>
+  >({});
+  const [multiExpressionPendingUrl, setMultiExpressionPendingUrl] = useState<
+    string | null
+  >(null);
+  const [multiExpressionVideosPendingUrl, setMultiExpressionVideosPendingUrl] =
+    useState<string | null>(null);
+  const [multiPoseVideoPromptsByUrl, setMultiPoseVideoPromptsByUrl] = useState<
+    Record<string, string[]>
+  >({});
+  const [multiExpressionVideoPromptsByUrl, setMultiExpressionVideoPromptsByUrl] =
+    useState<Record<string, string[]>>({});
+  const [videoRegenerateCtx, setVideoRegenerateCtx] = useState<null | {
+    kind: "pose" | "expression";
+    mainUrl: string;
+    slotIndex: number;
+    stillImageUrl: string;
+  }>(null);
+  const [videoRegenerateDraft, setVideoRegenerateDraft] = useState("");
+  const [regeneratingVideoKey, setRegeneratingVideoKey] = useState<
+    string | null
+  >(null);
+  const [videoGifUrlByVideoUrl, setVideoGifUrlByVideoUrl] = useState<
+    Record<string, string>
+  >({});
+  const [videoGifConverting, setVideoGifConverting] = useState<
+    Record<string, boolean>
+  >({});
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -111,6 +227,8 @@ export function StandaloneCharacterCreator() {
             style: selectedStyle.style_name,
             model: selectedStyle.model,
             promptEnhancer: selectedStyle.prompt_enhancer,
+            background: characterBackground,
+            shotType: characterShotType,
           }),
         }
       );
@@ -119,6 +237,13 @@ export function StandaloneCharacterCreator() {
       setGeneratedImages(data.imageUrls);
       setGeneratedPrompt(data.prompt);
       setMultiPoseByUrl({});
+      setMultiPoseSequenceByUrl({});
+      setMultiPoseVideosByUrl({});
+      setMultiPoseVideoPromptsByUrl({});
+      setMultiExpressionByUrl({});
+      setMultiExpressionSequenceByUrl({});
+      setMultiExpressionVideosByUrl({});
+      setMultiExpressionVideoPromptsByUrl({});
       toast({ title: "Character generated!", description: "Your character image is ready." });
     },
     onError: (error: Error) => {
@@ -157,6 +282,8 @@ export function StandaloneCharacterCreator() {
             prompt: prompt || "character",
             promptEnhancer: selectedStyle.prompt_enhancer,
             aspectRatio,
+            background: characterBackground,
+            shotType: characterShotType,
           }),
         }
       );
@@ -164,6 +291,13 @@ export function StandaloneCharacterCreator() {
     onSuccess: (data) => {
       setUploadStyledImageUrl(data.imageUrl);
       setMultiPoseByUrl({});
+      setMultiPoseSequenceByUrl({});
+      setMultiPoseVideosByUrl({});
+      setMultiPoseVideoPromptsByUrl({});
+      setMultiExpressionByUrl({});
+      setMultiExpressionSequenceByUrl({});
+      setMultiExpressionVideosByUrl({});
+      setMultiExpressionVideoPromptsByUrl({});
       toast({ title: "Style applied!", description: "Your styled character is ready." });
     },
     onError: (error: Error) => {
@@ -203,12 +337,31 @@ export function StandaloneCharacterCreator() {
         "/api/characters/multi-pose",
         {
           method: "POST",
-          body: JSON.stringify({ imageUrl, context }),
+          body: JSON.stringify({
+            imageUrl,
+            context,
+            background: characterBackground,
+            shotType: characterShotType,
+          }),
         }
       );
     },
     onSuccess: (data, imageUrl) => {
       setMultiPoseByUrl((prev) => ({ ...prev, [imageUrl]: data.imageUrls }));
+      setMultiPoseSequenceByUrl((prev) => ({
+        ...prev,
+        [imageUrl]: data.sequencePrompt,
+      }));
+      setMultiPoseVideosByUrl((prev) => {
+        const next = { ...prev };
+        delete next[imageUrl];
+        return next;
+      });
+      setMultiPoseVideoPromptsByUrl((prev) => {
+        const next = { ...prev };
+        delete next[imageUrl];
+        return next;
+      });
       toast({
         title: "Multi-pose ready",
         description: "Six pose variations were generated.",
@@ -229,6 +382,294 @@ export function StandaloneCharacterCreator() {
   const handleGenerateMultiPose = (imageUrl: string) => {
     setMultiPosePendingUrl(imageUrl);
     multiPoseMutation.mutate(imageUrl);
+  };
+
+  const multiExpressionMutation = useMutation({
+    mutationFn: async (imageUrl: string) => {
+      const context = (generatedPrompt || prompt || "").trim();
+      return apiRequest<{
+        imageUrls: string[];
+        sequencePrompt: string;
+        prompts?: string[];
+      }>("/api/characters/multi-expression", {
+        method: "POST",
+        body: JSON.stringify({
+          imageUrl,
+          context,
+          aspectRatio,
+          background: characterBackground,
+          shotType: characterShotType,
+        }),
+      });
+    },
+    onSuccess: (data, imageUrl) => {
+      setMultiExpressionByUrl((prev) => ({
+        ...prev,
+        [imageUrl]: data.imageUrls,
+      }));
+      setMultiExpressionSequenceByUrl((prev) => ({
+        ...prev,
+        [imageUrl]: data.sequencePrompt,
+      }));
+      setMultiExpressionVideosByUrl((prev) => {
+        const next = { ...prev };
+        delete next[imageUrl];
+        return next;
+      });
+      setMultiExpressionVideoPromptsByUrl((prev) => {
+        const next = { ...prev };
+        delete next[imageUrl];
+        return next;
+      });
+      toast({
+        title: "Multi-expression ready",
+        description: "Six expression variations were generated.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Multi-expression failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setMultiExpressionPendingUrl(null);
+    },
+  });
+
+  const handleGenerateMultiExpression = (imageUrl: string) => {
+    setMultiExpressionPendingUrl(imageUrl);
+    multiExpressionMutation.mutate(imageUrl);
+  };
+
+  const sequentialVideosMutation = useMutation({
+    mutationFn: async ({
+      imageUrls,
+      sequencePrompt,
+      context,
+      kind,
+      background,
+      shotType,
+    }: {
+      mainUrl: string;
+      imageUrls: string[];
+      sequencePrompt: string;
+      context: string;
+      kind: "pose" | "expression";
+      background: CharacterBackground;
+      shotType: CharacterShotType;
+    }) => {
+      return apiRequest<{ videoUrls: string[]; videoPrompts: string[] }>(
+        "/api/characters/multi-pose-videos",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            imageUrls,
+            sequencePrompt,
+            context,
+            videoKind: kind,
+            background,
+            shotType,
+          }),
+        }
+      );
+    },
+    onSuccess: (data, { mainUrl, kind }) => {
+      if (kind === "pose") {
+        setMultiPoseVideosByUrl((prev) => ({
+          ...prev,
+          [mainUrl]: data.videoUrls,
+        }));
+        setMultiPoseVideoPromptsByUrl((prev) => ({
+          ...prev,
+          [mainUrl]: data.videoPrompts,
+        }));
+        toast({
+          title: "Videos ready",
+          description: "Six 3-second pose clips were generated.",
+        });
+      } else {
+        setMultiExpressionVideosByUrl((prev) => ({
+          ...prev,
+          [mainUrl]: data.videoUrls,
+        }));
+        setMultiExpressionVideoPromptsByUrl((prev) => ({
+          ...prev,
+          [mainUrl]: data.videoPrompts,
+        }));
+        toast({
+          title: "Videos ready",
+          description: "Six 3-second expression clips were generated.",
+        });
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Video generation failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+    onSettled: (_data, _err, variables) => {
+      if (variables?.kind === "pose") {
+        setMultiPoseVideosPendingUrl(null);
+      } else if (variables?.kind === "expression") {
+        setMultiExpressionVideosPendingUrl(null);
+      }
+    },
+  });
+
+  const regenerateVideoMutation = useMutation({
+    mutationFn: async (vars: {
+      kind: "pose" | "expression";
+      mainUrl: string;
+      slotIndex: number;
+      stillImageUrl: string;
+      prompt: string;
+    }) => {
+      const { videoUrl } = await apiRequest<{ videoUrl: string }>(
+        "/api/characters/video-from-image",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            imageUrl: vars.stillImageUrl,
+            prompt: vars.prompt,
+          }),
+        }
+      );
+      return { ...vars, videoUrl };
+    },
+    onMutate: (vars) => {
+      setRegeneratingVideoKey(
+        `${vars.kind}:${vars.mainUrl}:${vars.slotIndex}`
+      );
+    },
+    onSuccess: (data) => {
+      const { kind, mainUrl, slotIndex, prompt, videoUrl } = data;
+      if (kind === "pose") {
+        setMultiPoseVideosByUrl((prev) => {
+          const cur = [...(prev[mainUrl] ?? [])];
+          cur[slotIndex] = videoUrl;
+          return { ...prev, [mainUrl]: cur };
+        });
+        setMultiPoseVideoPromptsByUrl((prev) => {
+          const cur = [...(prev[mainUrl] ?? [])];
+          cur[slotIndex] = prompt;
+          return { ...prev, [mainUrl]: cur };
+        });
+      } else {
+        setMultiExpressionVideosByUrl((prev) => {
+          const cur = [...(prev[mainUrl] ?? [])];
+          cur[slotIndex] = videoUrl;
+          return { ...prev, [mainUrl]: cur };
+        });
+        setMultiExpressionVideoPromptsByUrl((prev) => {
+          const cur = [...(prev[mainUrl] ?? [])];
+          cur[slotIndex] = prompt;
+          return { ...prev, [mainUrl]: cur };
+        });
+      }
+      setVideoRegenerateCtx(null);
+      setVideoRegenerateDraft("");
+      toast({
+        title: "Video regenerated",
+        description: `Clip ${slotIndex + 1} was updated.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Regeneration failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setRegeneratingVideoKey(null);
+    },
+  });
+
+  const openVideoRegenerateModal = (p: {
+    kind: "pose" | "expression";
+    mainUrl: string;
+    slotIndex: number;
+    stillImageUrl: string;
+    prompt: string;
+  }) => {
+    setVideoRegenerateCtx({
+      kind: p.kind,
+      mainUrl: p.mainUrl,
+      slotIndex: p.slotIndex,
+      stillImageUrl: p.stillImageUrl,
+    });
+    setVideoRegenerateDraft(p.prompt);
+  };
+
+  const submitVideoRegenerate = () => {
+    const trimmed = videoRegenerateDraft.trim();
+    if (!videoRegenerateCtx) return;
+    if (!trimmed) {
+      toast({
+        title: "Prompt required",
+        description: "Enter a motion prompt for the video.",
+        variant: "destructive",
+      });
+      return;
+    }
+    regenerateVideoMutation.mutate({
+      kind: videoRegenerateCtx.kind,
+      mainUrl: videoRegenerateCtx.mainUrl,
+      slotIndex: videoRegenerateCtx.slotIndex,
+      stillImageUrl: videoRegenerateCtx.stillImageUrl,
+      prompt: trimmed,
+    });
+  };
+
+  const handleGenerateVideos = (mainUrl: string) => {
+    const poses = multiPoseByUrl[mainUrl];
+    const seq = multiPoseSequenceByUrl[mainUrl];
+    if (!poses || poses.length !== 6 || !seq?.trim()) {
+      toast({
+        title: "Multi-pose required",
+        description: "Generate multi-pose images first (six poses).",
+        variant: "destructive",
+      });
+      return;
+    }
+    setMultiPoseVideosPendingUrl(mainUrl);
+    sequentialVideosMutation.mutate({
+      mainUrl,
+      imageUrls: poses,
+      sequencePrompt: seq,
+      context: (generatedPrompt || prompt || "").trim(),
+      kind: "pose",
+      background: characterBackground,
+      shotType: characterShotType,
+    });
+  };
+
+  const handleGenerateExpressionVideos = (mainUrl: string) => {
+    const expr = multiExpressionByUrl[mainUrl];
+    const seq = multiExpressionSequenceByUrl[mainUrl];
+    if (!expr || expr.length !== 6 || !seq?.trim()) {
+      toast({
+        title: "Multi-expression required",
+        description:
+          "Generate multi-expression images first (six expression stills).",
+        variant: "destructive",
+      });
+      return;
+    }
+    setMultiExpressionVideosPendingUrl(mainUrl);
+    sequentialVideosMutation.mutate({
+      mainUrl,
+      imageUrls: expr,
+      sequencePrompt: seq,
+      context: (generatedPrompt || prompt || "").trim(),
+      kind: "expression",
+      background: characterBackground,
+      shotType: characterShotType,
+    });
   };
 
   const handleFileChange = useCallback(
@@ -271,22 +712,111 @@ export function StandaloneCharacterCreator() {
     [uploadMutation]
   );
 
-  const handleDownload = async (imageUrl: string) => {
+  const handleDownload = async (mediaUrl: string) => {
+    const isFfmpegGifHost = (() => {
+      try {
+        const u = new URL(mediaUrl);
+        const h = u.hostname.toLowerCase();
+        return h === "ffmpegapi.net" || h.endsWith(".ffmpegapi.net");
+      } catch {
+        return false;
+      }
+    })();
+
     try {
-      const response = await fetch(imageUrl, { mode: "cors" });
+      const proxyHeaders: Record<string, string> = {};
+      const token = getAuthToken();
+      if (token) proxyHeaders.Authorization = `Bearer ${token}`;
+
+      const response = isFfmpegGifHost
+        ? await fetch(
+            `/api/characters/proxy-download?url=${encodeURIComponent(mediaUrl)}`,
+            { headers: proxyHeaders }
+          )
+        : await fetch(mediaUrl, { mode: "cors" });
+
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => null);
+        throw new Error(
+          errJson && typeof errJson.error === "string"
+            ? errJson.error
+            : `HTTP ${response.status}`
+        );
+      }
+
       const blob = await response.blob();
+      const ext =
+        blob.type === "image/gif" || /\.gif(\?|$)/i.test(mediaUrl)
+          ? "gif"
+          : blob.type.startsWith("video/") ||
+              /\.(mp4|webm|mov)(\?|$)/i.test(mediaUrl)
+            ? "mp4"
+            : "jpg";
+
+      const cd = response.headers.get("Content-Disposition");
+      const match = cd?.match(/filename="([^"]+)"/);
+      const suggestedName = match?.[1];
+
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `character_${Date.now()}.jpg`;
+      a.download =
+        suggestedName ||
+        `character_${Date.now()}.${ext}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch {
-      toast({ title: "Download failed", description: "Could not download the image. CORS may be blocking access.", variant: "destructive" });
+    } catch (e) {
+      toast({
+        title: "Download failed",
+        description:
+          e instanceof Error
+            ? e.message
+            : isFfmpegGifHost
+              ? "Could not download the file through the server."
+              : "Could not download the file. CORS may be blocking access.",
+        variant: "destructive",
+      });
     }
   };
+
+  const handleConvertVideoToGif = useCallback(async (videoUrl: string) => {
+    setVideoGifConverting((prev) => ({ ...prev, [videoUrl]: true }));
+    try {
+      const data = await apiRequest<{ download_url?: string }>(
+        "/api/characters/convert-video-to-gif",
+        {
+          method: "POST",
+          body: JSON.stringify({ video_url: videoUrl }),
+        }
+      );
+      if (data.download_url) {
+        const downloadUrl = data.download_url;
+        setVideoGifUrlByVideoUrl((prev) => ({
+          ...prev,
+          [videoUrl]: downloadUrl,
+        }));
+        toast({
+          title: "GIF ready",
+          description: "Use Download GIF to save it.",
+        });
+      }
+    } catch (e) {
+      toast({
+        title: "GIF conversion failed",
+        description:
+          e instanceof Error ? e.message : "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setVideoGifConverting((prev) => {
+        const next = { ...prev };
+        delete next[videoUrl];
+        return next;
+      });
+    }
+  }, []);
 
   const handleSave = (imageUrl: string) => {
     if (showSaveInput === imageUrl && saveName.trim()) {
@@ -375,9 +905,25 @@ export function StandaloneCharacterCreator() {
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
-                <Label className="text-sm font-medium text-white">Aspect ratio</Label>
-                <AspectRatioSelect value={aspectRatio} onChange={setAspectRatio} />
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Label className="text-sm font-medium text-white">Aspect ratio</Label>
+                  <AspectRatioSelect value={aspectRatio} onChange={setAspectRatio} />
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Label className="text-sm font-medium text-white">Background</Label>
+                  <CharacterBackgroundSelect
+                    value={characterBackground}
+                    onChange={setCharacterBackground}
+                  />
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Label className="text-sm font-medium text-white">Shot type</Label>
+                  <CharacterShotTypeSelect
+                    value={characterShotType}
+                    onChange={setCharacterShotType}
+                  />
+                </div>
               </div>
 
               <Button
@@ -420,8 +966,30 @@ export function StandaloneCharacterCreator() {
                 setSaveName={setSaveName}
                 savePending={saveMutation.isPending}
                 multiPoseByUrl={multiPoseByUrl}
+                multiPoseSequenceByUrl={multiPoseSequenceByUrl}
+                multiPoseVideosByUrl={multiPoseVideosByUrl}
                 multiPosePendingUrl={multiPosePendingUrl}
+                multiPoseVideosPendingUrl={multiPoseVideosPendingUrl}
                 onGenerateMultiPose={handleGenerateMultiPose}
+                onGenerateMultiExpression={handleGenerateMultiExpression}
+                multiExpressionByUrl={multiExpressionByUrl}
+                multiExpressionSequenceByUrl={multiExpressionSequenceByUrl}
+                multiExpressionVideosByUrl={multiExpressionVideosByUrl}
+                multiExpressionPendingUrl={multiExpressionPendingUrl}
+                multiExpressionVideosPendingUrl={
+                  multiExpressionVideosPendingUrl
+                }
+                onGenerateVideos={handleGenerateVideos}
+                onGenerateExpressionVideos={handleGenerateExpressionVideos}
+                multiPoseVideoPromptsByUrl={multiPoseVideoPromptsByUrl}
+                multiExpressionVideoPromptsByUrl={
+                  multiExpressionVideoPromptsByUrl
+                }
+                onOpenVideoRegenerate={openVideoRegenerateModal}
+                regeneratingVideoKey={regeneratingVideoKey}
+                videoGifUrlByVideoUrl={videoGifUrlByVideoUrl}
+                videoGifConverting={videoGifConverting}
+                onConvertVideoToGif={handleConvertVideoToGif}
               />
             </div>
           </div>
@@ -500,9 +1068,25 @@ export function StandaloneCharacterCreator() {
                     />
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-3">
-                    <Label className="text-sm font-medium text-white">Aspect ratio</Label>
-                    <AspectRatioSelect value={aspectRatio} onChange={setAspectRatio} />
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Label className="text-sm font-medium text-white">Aspect ratio</Label>
+                      <AspectRatioSelect value={aspectRatio} onChange={setAspectRatio} />
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Label className="text-sm font-medium text-white">Background</Label>
+                      <CharacterBackgroundSelect
+                        value={characterBackground}
+                        onChange={setCharacterBackground}
+                      />
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Label className="text-sm font-medium text-white">Shot type</Label>
+                      <CharacterShotTypeSelect
+                        value={characterShotType}
+                        onChange={setCharacterShotType}
+                      />
+                    </div>
                   </div>
 
                   <Button
@@ -545,8 +1129,30 @@ export function StandaloneCharacterCreator() {
                     setSaveName={setSaveName}
                     savePending={saveMutation.isPending}
                     multiPoseByUrl={multiPoseByUrl}
+                    multiPoseSequenceByUrl={multiPoseSequenceByUrl}
+                    multiPoseVideosByUrl={multiPoseVideosByUrl}
                     multiPosePendingUrl={multiPosePendingUrl}
+                    multiPoseVideosPendingUrl={multiPoseVideosPendingUrl}
                     onGenerateMultiPose={handleGenerateMultiPose}
+                    onGenerateMultiExpression={handleGenerateMultiExpression}
+                    multiExpressionByUrl={multiExpressionByUrl}
+                    multiExpressionSequenceByUrl={multiExpressionSequenceByUrl}
+                    multiExpressionVideosByUrl={multiExpressionVideosByUrl}
+                    multiExpressionPendingUrl={multiExpressionPendingUrl}
+                    multiExpressionVideosPendingUrl={
+                      multiExpressionVideosPendingUrl
+                    }
+                    onGenerateVideos={handleGenerateVideos}
+                    onGenerateExpressionVideos={handleGenerateExpressionVideos}
+                    multiPoseVideoPromptsByUrl={multiPoseVideoPromptsByUrl}
+                    multiExpressionVideoPromptsByUrl={
+                      multiExpressionVideoPromptsByUrl
+                    }
+                    onOpenVideoRegenerate={openVideoRegenerateModal}
+                    regeneratingVideoKey={regeneratingVideoKey}
+                    videoGifUrlByVideoUrl={videoGifUrlByVideoUrl}
+                    videoGifConverting={videoGifConverting}
+                    onConvertVideoToGif={handleConvertVideoToGif}
                   />
                 </>
               )}
@@ -584,6 +1190,70 @@ export function StandaloneCharacterCreator() {
           onResult={handleCameraResult}
         />
       )}
+
+      <Dialog
+        open={videoRegenerateCtx !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setVideoRegenerateCtx(null);
+            setVideoRegenerateDraft("");
+          }
+        }}
+      >
+        <DialogContent className="max-h-[90vh] overflow-y-auto border-zinc-700 bg-zinc-900 text-zinc-100 sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-white">Regenerate video</DialogTitle>
+            <DialogDescription className="text-zinc-400">
+              Edit the motion prompt for Wan 2.6 image-to-video, then regenerate
+              this clip from the same still image.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 pt-1">
+            <Label htmlFor="video-regenerate-prompt" className="text-zinc-300">
+              Motion prompt
+            </Label>
+            <Textarea
+              id="video-regenerate-prompt"
+              value={videoRegenerateDraft}
+              onChange={(e) => setVideoRegenerateDraft(e.target.value)}
+              className="min-h-[120px] border-zinc-600 bg-black/50 text-zinc-100 placeholder:text-zinc-600"
+              placeholder="Describe subtle motion for this clip…"
+            />
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="secondary"
+                className="border-zinc-600 bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
+                onClick={() => {
+                  setVideoRegenerateCtx(null);
+                  setVideoRegenerateDraft("");
+                }}
+                disabled={regenerateVideoMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                className="floating-button"
+                onClick={submitVideoRegenerate}
+                disabled={regenerateVideoMutation.isPending}
+              >
+                {regenerateVideoMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Regenerating…
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Regenerate
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -663,8 +1333,26 @@ function ImageResults({
   setSaveName,
   savePending,
   multiPoseByUrl,
+  multiPoseSequenceByUrl,
+  multiPoseVideosByUrl,
   multiPosePendingUrl,
+  multiPoseVideosPendingUrl,
   onGenerateMultiPose,
+  onGenerateMultiExpression,
+  multiExpressionByUrl,
+  multiExpressionSequenceByUrl,
+  multiExpressionVideosByUrl,
+  multiExpressionPendingUrl,
+  multiExpressionVideosPendingUrl,
+  onGenerateVideos,
+  onGenerateExpressionVideos,
+  multiPoseVideoPromptsByUrl,
+  multiExpressionVideoPromptsByUrl,
+  onOpenVideoRegenerate,
+  regeneratingVideoKey,
+  videoGifUrlByVideoUrl,
+  videoGifConverting,
+  onConvertVideoToGif,
 }: {
   images: string[];
   onDownload: (url: string) => void;
@@ -676,10 +1364,43 @@ function ImageResults({
   setSaveName: (v: string) => void;
   savePending: boolean;
   multiPoseByUrl: Record<string, string[]>;
+  multiPoseSequenceByUrl: Record<string, string>;
+  multiPoseVideosByUrl: Record<string, string[]>;
   multiPosePendingUrl: string | null;
+  multiPoseVideosPendingUrl: string | null;
   onGenerateMultiPose: (url: string) => void;
+  onGenerateMultiExpression: (url: string) => void;
+  multiExpressionByUrl: Record<string, string[]>;
+  multiExpressionSequenceByUrl: Record<string, string>;
+  multiExpressionVideosByUrl: Record<string, string[]>;
+  multiExpressionPendingUrl: string | null;
+  multiExpressionVideosPendingUrl: string | null;
+  onGenerateVideos: (url: string) => void;
+  onGenerateExpressionVideos: (url: string) => void;
+  multiPoseVideoPromptsByUrl: Record<string, string[]>;
+  multiExpressionVideoPromptsByUrl: Record<string, string[]>;
+  onOpenVideoRegenerate: (p: {
+    kind: "pose" | "expression";
+    mainUrl: string;
+    slotIndex: number;
+    stillImageUrl: string;
+    prompt: string;
+  }) => void;
+  regeneratingVideoKey: string | null;
+  videoGifUrlByVideoUrl: Record<string, string>;
+  videoGifConverting: Record<string, boolean>;
+  onConvertVideoToGif: (videoUrl: string) => void;
 }) {
   const posesFor = (mainUrl: string) => multiPoseByUrl[mainUrl] ?? [];
+  const expressionsFor = (mainUrl: string) =>
+    multiExpressionByUrl[mainUrl] ?? [];
+  const videosFor = (mainUrl: string) => multiPoseVideosByUrl[mainUrl] ?? [];
+  const expressionVideosFor = (mainUrl: string) =>
+    multiExpressionVideosByUrl[mainUrl] ?? [];
+  const poseVideoPromptsFor = (mainUrl: string) =>
+    multiPoseVideoPromptsByUrl[mainUrl] ?? [];
+  const expressionVideoPromptsFor = (mainUrl: string) =>
+    multiExpressionVideoPromptsByUrl[mainUrl] ?? [];
 
   return (
     <div className="space-y-4 pt-2">
@@ -692,7 +1413,24 @@ function ImageResults({
         <div className="flex w-full flex-col items-stretch gap-8 sm:gap-10">
           {images.map((url, i) => {
             const poseUrls = posesFor(url);
+            const expressionUrls = expressionsFor(url);
+            const videoUrls = videosFor(url);
+            const expressionVideoUrls = expressionVideosFor(url);
+            const poseVideoPrompts = poseVideoPromptsFor(url);
+            const expressionVideoPrompts = expressionVideoPromptsFor(url);
             const isPoseLoading = multiPosePendingUrl === url;
+            const isExpressionLoading = multiExpressionPendingUrl === url;
+            const isPoseVideosLoading = multiPoseVideosPendingUrl === url;
+            const isExpressionVideosLoading =
+              multiExpressionVideosPendingUrl === url;
+            const isAnyVideosLoading =
+              isPoseVideosLoading || isExpressionVideosLoading;
+            const hasPoseSequence = Boolean(
+              multiPoseSequenceByUrl[url]?.trim()
+            );
+            const hasExpressionSequence = Boolean(
+              multiExpressionSequenceByUrl[url]?.trim()
+            );
 
             return (
               <div
@@ -769,22 +1507,40 @@ function ImageResults({
                 </div>
 
                 <div className="flex w-full flex-col gap-3 px-0 sm:items-center">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    disabled={isPoseLoading}
-                    onClick={() => onGenerateMultiPose(url)}
-                    className="h-11 w-full shrink-0 rounded-xl border border-zinc-600 bg-zinc-800/90 text-zinc-100 hover:bg-zinc-700 sm:max-w-md"
-                  >
-                    {isPoseLoading ? (
-                      <>
-                        <span className="loading-spinner mr-2" />
-                        Generating multi-pose…
-                      </>
-                    ) : (
-                      "Generate Multi-pose"
-                    )}
-                  </Button>
+                  <div className="flex w-full max-w-md flex-col gap-2 sm:max-w-none sm:flex-row sm:flex-wrap sm:justify-center">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={isPoseLoading || isExpressionLoading}
+                      onClick={() => onGenerateMultiPose(url)}
+                      className="h-11 w-full shrink-0 rounded-xl border border-zinc-600 bg-zinc-800/90 text-zinc-100 hover:bg-zinc-700 sm:min-w-[10.5rem] sm:flex-1 sm:max-w-[14rem]"
+                    >
+                      {isPoseLoading ? (
+                        <>
+                          <span className="loading-spinner mr-2" />
+                          Multi-pose…
+                        </>
+                      ) : (
+                        "Generate Multi-pose"
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={isPoseLoading || isExpressionLoading}
+                      onClick={() => onGenerateMultiExpression(url)}
+                      className="h-11 w-full shrink-0 rounded-xl border border-zinc-600 bg-zinc-800/90 text-zinc-100 hover:bg-zinc-700 sm:min-w-[10.5rem] sm:flex-1 sm:max-w-[14rem]"
+                    >
+                      {isExpressionLoading ? (
+                        <>
+                          <span className="loading-spinner mr-2" />
+                          Multi-expression…
+                        </>
+                      ) : (
+                        "Generate Multi-expression"
+                      )}
+                    </Button>
+                  </div>
 
                   {poseUrls.length > 0 && (
                     <div className="w-full space-y-2">
@@ -824,6 +1580,335 @@ function ImageResults({
                           </div>
                         ))}
                       </div>
+
+                      {poseUrls.length === 6 && hasPoseSequence && (
+                        <>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            disabled={isAnyVideosLoading}
+                            onClick={() => onGenerateVideos(url)}
+                            className="mt-2 h-11 w-full shrink-0 rounded-xl border border-zinc-600 bg-zinc-800/90 text-zinc-100 hover:bg-zinc-700 sm:max-w-md"
+                          >
+                            {isPoseVideosLoading ? (
+                              <>
+                                <span className="loading-spinner mr-2" />
+                                Generating pose videos…
+                              </>
+                            ) : (
+                              "Generate Pose Videos"
+                            )}
+                          </Button>
+
+                          {videoUrls.length > 0 && (
+                            <div className="mt-4 w-full space-y-2">
+                              <p className="text-center text-sm font-medium text-zinc-400 sm:text-left">
+                                Pose videos (3s each)
+                              </p>
+                              <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                {videoUrls.map((videoUrl, vi) => {
+                                  const regenKey = `pose:${url}:${vi}`;
+                                  const isSlotRegenerating =
+                                    regeneratingVideoKey === regenKey;
+                                  const motionPrompt =
+                                    poseVideoPrompts[vi] ?? "";
+                                  const gifUrl =
+                                    videoGifUrlByVideoUrl[videoUrl];
+                                  const gifBusy =
+                                    videoGifConverting[videoUrl] === true;
+                                  return (
+                                    <div
+                                      key={`pose-vid-card-${url}-${vi}`}
+                                      className="flex flex-col rounded-xl border border-zinc-700 bg-zinc-950/80 p-3 shadow-lg shadow-black/25"
+                                    >
+                                      <div className="group/vid relative overflow-hidden rounded-lg border border-zinc-800 bg-black">
+                                        <video
+                                          key={videoUrl}
+                                          src={videoUrl}
+                                          controls
+                                          playsInline
+                                          className="mx-auto block aspect-video w-full object-contain"
+                                          preload="metadata"
+                                        />
+                                        <div className="absolute right-2 top-2 opacity-0 transition-opacity group-hover/vid:opacity-100 max-sm:opacity-100">
+                                          <button
+                                            type="button"
+                                            onClick={() => onDownload(videoUrl)}
+                                            className="rounded-md bg-black/70 p-2 transition-colors hover:bg-black/90"
+                                            title="Download video"
+                                          >
+                                            <Download className="h-4 w-4 text-white" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                      <p className="mt-2 line-clamp-2 text-center text-xs text-zinc-500">
+                                        Clip {vi + 1}
+                                      </p>
+                                      <Button
+                                        type="button"
+                                        variant="secondary"
+                                        size="sm"
+                                        className="mt-2 h-9 w-full shrink-0 rounded-lg border border-zinc-600 bg-zinc-800/90 text-zinc-100 hover:bg-zinc-700"
+                                        disabled={
+                                          isPoseVideosLoading ||
+                                          isSlotRegenerating
+                                        }
+                                        onClick={() =>
+                                          onOpenVideoRegenerate({
+                                            kind: "pose",
+                                            mainUrl: url,
+                                            slotIndex: vi,
+                                            stillImageUrl: poseUrls[vi],
+                                            prompt: motionPrompt,
+                                          })
+                                        }
+                                      >
+                                        {isSlotRegenerating ? (
+                                          <>
+                                            <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                                            Regenerating…
+                                          </>
+                                        ) : (
+                                          <>
+                                            <RefreshCw className="mr-2 h-3.5 w-3.5" />
+                                            Regenerate
+                                          </>
+                                        )}
+                                      </Button>
+                                      {gifUrl ? (
+                                        <Button
+                                          type="button"
+                                          variant="secondary"
+                                          size="sm"
+                                          className="mt-2 h-9 w-full shrink-0 rounded-lg border border-emerald-700/80 bg-emerald-950/50 text-emerald-100 hover:bg-emerald-900/40"
+                                          onClick={() => onDownload(gifUrl)}
+                                        >
+                                          <Download className="mr-2 h-3.5 w-3.5" />
+                                          Download GIF
+                                        </Button>
+                                      ) : (
+                                        <Button
+                                          type="button"
+                                          variant="secondary"
+                                          size="sm"
+                                          className="mt-2 h-9 w-full shrink-0 rounded-lg border border-zinc-600 bg-zinc-800/90 text-zinc-100 hover:bg-zinc-700"
+                                          disabled={
+                                            isPoseVideosLoading ||
+                                            isSlotRegenerating ||
+                                            gifBusy
+                                          }
+                                          onClick={() =>
+                                            onConvertVideoToGif(videoUrl)
+                                          }
+                                        >
+                                          {gifBusy ? (
+                                            <>
+                                              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                                              Converting…
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Film className="mr-2 h-3.5 w-3.5" />
+                                              Convert to GIF
+                                            </>
+                                          )}
+                                        </Button>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {expressionUrls.length > 0 && (
+                    <div className="w-full space-y-2">
+                      <p className="text-center text-sm font-medium text-zinc-400 sm:text-left">
+                        Expression variations (same pose, face only)
+                      </p>
+                      <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                        {expressionUrls.map((exprUrl, ei) => (
+                          <div
+                            key={`${exprUrl}-${ei}`}
+                            className="group/expr relative box-border min-w-0 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950/50"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={exprUrl}
+                              alt={`Expression ${ei + 1}`}
+                              className="mx-auto block h-auto w-full max-h-[min(42.5vh,400px)] object-contain"
+                            />
+                            <div className="absolute right-1 top-1 flex gap-0.5 opacity-0 transition-opacity group-hover/expr:opacity-100 max-sm:opacity-100">
+                              <button
+                                type="button"
+                                onClick={() => onExpand(exprUrl)}
+                                className="rounded-md bg-black/60 p-1.5 transition-colors hover:bg-black/80"
+                                title="Expand"
+                              >
+                                <Maximize2 className="h-3.5 w-3.5 text-white" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => onDownload(exprUrl)}
+                                className="rounded-md bg-black/60 p-1.5 transition-colors hover:bg-black/80"
+                                title="Download"
+                              >
+                                <Download className="h-3.5 w-3.5 text-white" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {expressionUrls.length === 6 &&
+                        hasExpressionSequence && (
+                          <>
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              disabled={isAnyVideosLoading}
+                              onClick={() => onGenerateExpressionVideos(url)}
+                              className="mt-2 h-11 w-full shrink-0 rounded-xl border border-zinc-600 bg-zinc-800/90 text-zinc-100 hover:bg-zinc-700 sm:max-w-md"
+                            >
+                              {isExpressionVideosLoading ? (
+                                <>
+                                  <span className="loading-spinner mr-2" />
+                                  Generating expression videos…
+                                </>
+                              ) : (
+                                "Generate Expression Videos"
+                              )}
+                            </Button>
+
+                            {expressionVideoUrls.length > 0 && (
+                              <div className="mt-4 w-full space-y-2">
+                                <p className="text-center text-sm font-medium text-zinc-400 sm:text-left">
+                                  Expression videos (3s each)
+                                </p>
+                                <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                  {expressionVideoUrls.map((videoUrl, vi) => {
+                                    const regenKey = `expression:${url}:${vi}`;
+                                    const isSlotRegenerating =
+                                      regeneratingVideoKey === regenKey;
+                                    const motionPrompt =
+                                      expressionVideoPrompts[vi] ?? "";
+                                    const gifUrl =
+                                      videoGifUrlByVideoUrl[videoUrl];
+                                    const gifBusy =
+                                      videoGifConverting[videoUrl] === true;
+                                    return (
+                                      <div
+                                        key={`expr-vid-card-${url}-${vi}`}
+                                        className="flex flex-col rounded-xl border border-zinc-700 bg-zinc-950/80 p-3 shadow-lg shadow-black/25"
+                                      >
+                                        <div className="group/exprvid relative overflow-hidden rounded-lg border border-zinc-800 bg-black">
+                                          <video
+                                            key={videoUrl}
+                                            src={videoUrl}
+                                            controls
+                                            playsInline
+                                            className="mx-auto block aspect-video w-full object-contain"
+                                            preload="metadata"
+                                          />
+                                          <div className="absolute right-2 top-2 opacity-0 transition-opacity group-hover/exprvid:opacity-100 max-sm:opacity-100">
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                onDownload(videoUrl)
+                                              }
+                                              className="rounded-md bg-black/70 p-2 transition-colors hover:bg-black/90"
+                                              title="Download video"
+                                            >
+                                              <Download className="h-4 w-4 text-white" />
+                                            </button>
+                                          </div>
+                                        </div>
+                                        <p className="mt-2 line-clamp-2 text-center text-xs text-zinc-500">
+                                          Clip {vi + 1}
+                                        </p>
+                                        <Button
+                                          type="button"
+                                          variant="secondary"
+                                          size="sm"
+                                          className="mt-2 h-9 w-full shrink-0 rounded-lg border border-zinc-600 bg-zinc-800/90 text-zinc-100 hover:bg-zinc-700"
+                                          disabled={
+                                            isExpressionVideosLoading ||
+                                            isSlotRegenerating
+                                          }
+                                          onClick={() =>
+                                            onOpenVideoRegenerate({
+                                              kind: "expression",
+                                              mainUrl: url,
+                                              slotIndex: vi,
+                                              stillImageUrl:
+                                                expressionUrls[vi],
+                                              prompt: motionPrompt,
+                                            })
+                                          }
+                                        >
+                                          {isSlotRegenerating ? (
+                                            <>
+                                              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                                              Regenerating…
+                                            </>
+                                          ) : (
+                                            <>
+                                              <RefreshCw className="mr-2 h-3.5 w-3.5" />
+                                              Regenerate
+                                            </>
+                                          )}
+                                        </Button>
+                                        {gifUrl ? (
+                                          <Button
+                                            type="button"
+                                            variant="secondary"
+                                            size="sm"
+                                            className="mt-2 h-9 w-full shrink-0 rounded-lg border border-emerald-700/80 bg-emerald-950/50 text-emerald-100 hover:bg-emerald-900/40"
+                                            onClick={() => onDownload(gifUrl)}
+                                          >
+                                            <Download className="mr-2 h-3.5 w-3.5" />
+                                            Download GIF
+                                          </Button>
+                                        ) : (
+                                          <Button
+                                            type="button"
+                                            variant="secondary"
+                                            size="sm"
+                                            className="mt-2 h-9 w-full shrink-0 rounded-lg border border-zinc-600 bg-zinc-800/90 text-zinc-100 hover:bg-zinc-700"
+                                            disabled={
+                                              isExpressionVideosLoading ||
+                                              isSlotRegenerating ||
+                                              gifBusy
+                                            }
+                                            onClick={() =>
+                                              onConvertVideoToGif(videoUrl)
+                                            }
+                                          >
+                                            {gifBusy ? (
+                                              <>
+                                                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                                                Converting…
+                                              </>
+                                            ) : (
+                                              <>
+                                                <Film className="mr-2 h-3.5 w-3.5" />
+                                                Convert to GIF
+                                              </>
+                                            )}
+                                          </Button>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
                     </div>
                   )}
                 </div>

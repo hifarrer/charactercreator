@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateToken } from "@/lib/auth";
+import { parseCharacterFraming } from "@/lib/character-framing";
 import { validatePrompt } from "@/lib/profanity-filter";
 import { imageToImage } from "@/lib/wavespeed";
 
@@ -12,6 +13,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { imageUrl, prompt, promptEnhancer, aspectRatio } = body;
+    const framing = parseCharacterFraming(body);
 
     if (!imageUrl || !prompt) {
       return NextResponse.json(
@@ -34,7 +36,8 @@ export async function POST(request: NextRequest) {
       publicImageUrl,
       prompt,
       promptEnhancer || null,
-      aspectRatio || "1:1"
+      aspectRatio || "1:1",
+      framing
     );
 
     return NextResponse.json(result);

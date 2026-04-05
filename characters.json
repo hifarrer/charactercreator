@@ -3,180 +3,180 @@
     "style_name": "Realistic Cinematic",
     "model": "wavespeed-ai/qwen-image/text-to-image-2512-lora",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/realistic1.jpg",
-    "prompt_enhancer": "cinematic lighting, photorealistic, detailed skin texture, movie still quality, dramatic composition"
+    "prompt_enhancer": "ultra-realistic portrait, photorealistic skin texture, natural facial proportions, cinematic film style, cinematic dslr photography style"
   },
   {
     "style_name": "Realistic Natural",
     "model": "wavespeed-ai/z-image/turbo",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/realistic2.jpg",
-    "prompt_enhancer": "natural lighting, photorealistic, candid photography style, soft focus background"
+    "prompt_enhancer": "ultra-realistic portrait, photorealistic skin texture, natural facial proportions"
   },
   {
     "style_name": "3D Animated",
     "model": "alibaba/wan-2.5/text-to-image",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/3danimted_film.jpg",
-    "prompt_enhancer": "3D animated film style, Pixar-like rendering, smooth shading, vibrant colors"
+    "prompt_enhancer": "high-quality 3D animated character, soft studio lighting, smooth materials, subsurface scattering skin, expressive facial features, cinematic render"
   },
   {
     "style_name": "3D Toon",
     "model": "alibaba/wan-2.5/text-to-image",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/3dtoon.jpg",
-    "prompt_enhancer": "3D toon style, exaggerated features, cartoon shading, playful design"
+    "prompt_enhancer": "stylized 3D toon character, simplified shapes, smooth shading, vibrant colors, soft lighting, playful proportions, high quality render"
   },
   {
     "style_name": "Anime Clean Cel",
     "model": "alibaba/wan-2.5/text-to-image",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/anime_cleancel.jpg",
-    "prompt_enhancer": "clean cel-shaded anime style, flat colors, bold outlines, studio quality"
+    "prompt_enhancer": "anime character, clean cel shading, sharp lineart, expressive eyes, smooth gradients, vibrant colors, modern anime style, studio quality illustration"
   },
   {
     "style_name": "Anime Realistic",
     "model": "alibaba/wan-2.5/text-to-image",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/anime_realistic.jpg",
-    "prompt_enhancer": "realistic anime style, detailed shading, semi-realistic proportions, high quality illustration"
+    "prompt_enhancer": "detailed anime style, semi-realistic anime, soft lighting, highly detailed eyes, smooth skin, painterly shading, high quality illustration"
   },
   {
     "style_name": "Black and White",
     "model": "alibaba/wan-2.5/text-to-image",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/bnw.jpg",
-    "prompt_enhancer": "black and white, monochrome, high contrast, dramatic shadows, noir style"
+    "prompt_enhancer": "film noir character, black and white, dramatic shadows, high contrast lighting, cinematic mood"
   },
   {
     "style_name": "Cartoon",
     "model": "alibaba/wan-2.5/text-to-image",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/cartoon.jpg",
-    "prompt_enhancer": "cartoon style, bold outlines, bright colors, expressive features, animated look"
+    "prompt_enhancer": "2D cartoon character, disney style, hand-drawn animation style, clean bold outlines, flat colors, simple shading, expressive facial features, smooth shapes, vibrant color palette, classic animation look, music video aesthetic"
   },
   {
     "style_name": "Clay",
     "model": "alibaba/wan-2.5/text-to-image",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/clay.jpg",
-    "prompt_enhancer": "claymation style, clay texture, stop-motion aesthetic, handcrafted look, soft lighting"
+    "prompt_enhancer": "clay character style, stop-motion aesthetic, handcrafted look, soft lighting, subtle texture, playful proportions"
   },
   {
     "style_name": "Comic",
     "model": "alibaba/wan-2.5/text-to-image",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/comic.jpg",
-    "prompt_enhancer": "comic book style, halftone dots, bold ink outlines, dynamic shading, superhero aesthetic"
+    "prompt_enhancer": "comic book character, bold ink lines, dynamic pose, dramatic lighting, halftone texture, vibrant colors, graphic novel style"
   },
   {
     "style_name": "Cyberpunk",
     "model": "alibaba/wan-2.5/text-to-image",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/cyberpunk.jpg",
-    "prompt_enhancer": "cyberpunk style, neon lights, futuristic tech, dark atmosphere, glowing accents"
+    "prompt_enhancer": "cyberpunk character, neon lights, dark futuristic city vibe, high contrast lighting, glowing accents, dystopian atmosphere"
   },
   {
     "style_name": "Digital Painting",
     "model": "alibaba/wan-2.5/text-to-image",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/digitalpainting.jpg",
-    "prompt_enhancer": "digital painting style, visible brushstrokes, rich color palette, artistic rendering"
+    "prompt_enhancer": "digital painting, painterly brush strokes, soft blending, artistic lighting, high detail, concept art quality, professional illustration"
   },
   {
     "style_name": "Fantasy",
     "model": "alibaba/wan-2.5/text-to-image",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/fantasy.jpg",
-    "prompt_enhancer": "fantasy art style, magical atmosphere, ethereal lighting, epic composition, detailed armor and clothing"
+    "prompt_enhancer": "fantasy character illustration, magical atmosphere, dramatic lighting, detailed costume, epic style, high fantasy artwork"
   },
   {
     "style_name": "Futuristic",
     "model": "alibaba/wan-2.5/text-to-image",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/futuristic.jpg",
-    "prompt_enhancer": "futuristic style, sci-fi aesthetic, sleek design, holographic elements, advanced technology"
+    "prompt_enhancer": "futuristic sci-fi character, cyberpunk elements, neon accents, advanced technology aesthetic, cinematic lighting, high detail"
   },
   {
     "style_name": "Goth",
     "model": "alibaba/wan-2.5/text-to-image",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/goth.jpg",
-    "prompt_enhancer": "gothic style, dark aesthetic, Victorian elements, pale skin, dramatic makeup, moody atmosphere"
+    "prompt_enhancer": "dark gothic character, moody lighting, deep shadows, dramatic atmosphere, high contrast, mysterious aesthetic"
   },
   {
     "style_name": "Toy Blocks",
     "model": "bytedance/seedream-v4",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/lego.jpg",
-    "prompt_enhancer": "toy block style, LEGO-like appearance, blocky geometry, plastic texture, playful miniature"
+    "prompt_enhancer": "LEGO character style, stop-motion aesthetic, handcrafted look, soft lighting, subtle texture, playful proportions"
   },
   {
     "style_name": "Manga",
     "model": "alibaba/wan-2.5/text-to-image",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/manga.jpg",
-    "prompt_enhancer": "manga style, Japanese comic art, screentone shading, expressive eyes, dynamic lines"
+    "prompt_enhancer": "manga style illustration, black and white, clean ink lines, screentone shading, high contrast, expressive linework, comic panel aesthetic"
   },
   {
     "style_name": "Miniature Toy",
     "model": "z-ai/cogview-4",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/miniature_toy.jpg",
-    "prompt_enhancer": "miniature toy figure, collectible figurine, tilt-shift effect, detailed small scale model"
+    "prompt_enhancer": "miniature toy character, plastic and vinyl textures, smooth molded details, toy-like proportions, shallow depth of field, tilt-shift effect, studio tabletop lighting, playful aesthetic, high detail, cinematic macro look"
   },
   {
     "style_name": "Oil Painting",
     "model": "alibaba/wan-2.5/text-to-image",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/oil_painting.jpg",
-    "prompt_enhancer": "oil painting style, thick impasto brushstrokes, rich warm palette, classical portrait technique"
+    "prompt_enhancer": "oil painting portrait, rich colors, visible brush strokes, classical painting style, dramatic lighting, fine art aesthetic"
   },
   {
     "style_name": "Pixelated",
     "model": "alibaba/wan-2.5/text-to-image",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/pixelated.jpg",
-    "prompt_enhancer": "pixel art style, retro 8-bit aesthetic, blocky pixels, limited color palette, nostalgic game art"
+    "prompt_enhancer": "pixel art character, retro 16-bit style, limited color palette, crisp pixels, video game sprite aesthetic"
   },
   {
     "style_name": "Psychodelic",
     "model": "alibaba/wan-2.5/text-to-image",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/psychodelic.jpg",
-    "prompt_enhancer": "psychedelic style, vibrant swirling colors, trippy patterns, surreal distortion, kaleidoscopic"
+    "prompt_enhancer": "psychedelic character, surreal colors, warped reality, dreamlike visuals, flowing shapes, trippy aesthetic"
   },
   {
     "style_name": "Punk",
     "model": "alibaba/wan-2.5/text-to-image",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/punk.jpg",
-    "prompt_enhancer": "punk style, rebellious attitude, mohawk and piercings, torn clothing, graffiti aesthetic, gritty"
+    "prompt_enhancer": "punk rock character, edgy fashion, bold attitude, dramatic lighting, gritty textures, high contrast, rebellious aesthetic"
   },
   {
     "style_name": "Retro",
     "model": "alibaba/wan-2.5/text-to-image",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/retro.jpg",
-    "prompt_enhancer": "retro style, vintage aesthetic, faded colors, film grain, 1950s-60s design influence"
+    "prompt_enhancer": "1970s aesthetic, disco era style, warm golden tones, analog film grain, soft focus, stylish fashion, cinematic lighting, retro photography look, smooth textures, music video atmosphere"
   },
   {
     "style_name": "Sketch",
     "model": "alibaba/wan-2.5/text-to-image",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/sketch.jpg",
-    "prompt_enhancer": "pencil sketch style, graphite drawing, crosshatching, paper texture, hand-drawn quality"
+    "prompt_enhancer": "character concept sketch, pencil drawing style, loose linework, minimal shading, early concept art aesthetic"
   },
   {
     "style_name": "Steampunk",
     "model": "alibaba/wan-2.5/text-to-image",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/steampunk.jpg",
-    "prompt_enhancer": "steampunk style, brass and copper mechanical elements, Victorian era, gears and clockwork, steam-powered"
+    "prompt_enhancer": "steampunk character, victorian-era aesthetic, brass and copper mechanical elements, intricate gears and clockwork details, leather and metal accessories, retro-futuristic design, industrial elegance, warm sepia tones, cinematic lighting, highly detailed, concept art quality"
   },
   {
     "style_name": "Watercolor",
     "model": "alibaba/wan-2.5/text-to-image",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/watercolor.jpg",
-    "prompt_enhancer": "watercolor painting style, soft washes, bleeding edges, translucent layers, paper texture"
+    "prompt_enhancer": "watercolor illustration, soft washes, light paper texture, gentle colors, loose brush strokes, artistic style"
   },
   {
     "style_name": "Ultra Surreal",
     "model": "alibaba/wan-2.5/text-to-image",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/Ultra_Surreal.jpg",
-    "prompt_enhancer": "ultra surreal style, dreamlike imagery, impossible geometry, Salvador Dali influence, hyper-detailed"
+    "prompt_enhancer": "flowing reflective surfaces, organic motion, cinematic lighting, surreal aesthetic"
   },
   {
     "style_name": "1960",
     "model": "bytedance/seedream-v4",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/1960.jpg",
-    "prompt_enhancer": "1960s style, mod fashion, pop art influence, bold graphic patterns, vintage color grading"
+    "prompt_enhancer": "1960s aesthetic, psychedelic style, bold vibrant colors, swirling patterns, mod fashion, soft analog lighting, artistic expression, dreamy atmosphere, retro film look, music video aesthetic"
   },
   {
     "style_name": "1970",
     "model": "bytedance/seedream-v4",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/1970.jpg",
-    "prompt_enhancer": "1970s style, disco era, warm earthy tones, bell-bottoms, groovy aesthetic, film photography look"
+    "prompt_enhancer": "1970s aesthetic, psychedelic style, bold vibrant colors, swirling patterns, mod fashion, soft analog lighting, artistic expression, dreamy atmosphere, retro film look, music video aesthetic"
   },
   {
     "style_name": "1980",
     "model": "bytedance/seedream-v4",
     "thumbnail_image": "https://neonvideo.b-cdn.net/characterpublic/1980.jpg",
-    "prompt_enhancer": "1980s style, neon colors, synthwave aesthetic, big hair, retro-futuristic, VHS quality"
+    "prompt_enhancer": "retro 1980s aesthetic, glowing highlights, soft film grain, dramatic backlighting, futuristic retro fashion, cinematic atmosphere, high contrast, music video style"
   }
 ]

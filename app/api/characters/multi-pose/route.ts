@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateToken } from "@/lib/auth";
+import { parseCharacterFraming } from "@/lib/character-framing";
 import { validatePrompt } from "@/lib/profanity-filter";
 import { generateMultiPoseSequencePrompt } from "@/lib/multipose-prompt";
 import { editSequentialMultiPose } from "@/lib/wavespeed";
@@ -25,6 +26,7 @@ export async function POST(request: NextRequest) {
       imageUrl?: string;
       context?: string;
     };
+    const framing = parseCharacterFraming(body);
 
     if (!imageUrl || typeof imageUrl !== "string") {
       return NextResponse.json(
@@ -45,10 +47,11 @@ export async function POST(request: NextRequest) {
     }
 
     const publicImageUrl = ensurePublicUrl(imageUrl, request);
-    const sequencePrompt = await generateMultiPoseSequencePrompt(ctx);
+    const sequencePrompt = await generateMultiPoseSequencePrompt(ctx, framing);
     const { imageUrls } = await editSequentialMultiPose(
       publicImageUrl,
-      sequencePrompt
+      sequencePrompt,
+      framing
     );
 
     return NextResponse.json({
