@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 330 80% 60%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 330 80% 60%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #ec4899, #06b6d4);
+  }
+
+  .floating-button {
+    @apply relative overflow-hidden font-semibold text-white rounded-xl transition-all duration-300;
+    background: linear-gradient(90deg, #ec4899, #d946ef 45%, #06b6d4);
+    box-shadow: 0 4px 24px rgba(236, 72, 153, 0.35);
+  }
+  .floating-button:hover {
+    box-shadow: 0 6px 28px rgba(236, 72, 153, 0.5);
+    transform: translateY(-1px);
+  }
+
+  .creator-tab-trigger {
+    @apply relative rounded-none border-0 bg-transparent px-1 pb-3 text-sm font-medium text-zinc-500 shadow-none ring-offset-0 transition-colors;
+  }
+  .creator-tab-trigger:hover {
+    @apply text-zinc-300;
+  }
+  .creator-tab-trigger[data-state="active"] {
+    @apply text-pink-400;
+    box-shadow: inset 0 -2px 0 0 #f472b6;
+  }
+  .floating-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .loading-spinner {
+    @apply inline-block w-5 h-5 border-2 border-pink-500 border-t-transparent rounded-full;
+    animation: spin 0.8s linear infinite;
+  }
+
+  .upload-zone {
+    @apply border-2 border-dashed border-gray-600 rounded-xl p-8 text-center cursor-pointer transition-colors duration-200;
+  }
+  .upload-zone:hover {
+    @apply border-pink-500 bg-pink-500/5;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-pink-500/40 rounded-full;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-pink-500/60;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

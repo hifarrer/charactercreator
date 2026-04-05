@@ -1,0 +1,32 @@
+# dependencies
+node_modules
+.pnp
+.pnp.js
+
+# build / next
+.next
+out
+build
+dist
+
+# env (secrets)
+.env
+.env*.local
+
+# debug / os
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# ide
+.idea
+.vscode
+*.swp
+*.swo
+
+# vercel
+.vercel
+
+# sqlite / local db if any
+*.db
+*.db-journal
